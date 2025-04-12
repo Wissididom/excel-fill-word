@@ -1,0 +1,13 @@
+<h2>Fill Word Document with Excel Data</h2>
+
+<div>
+  <label>Upload Excel File (.xlsx):</label>
+  <input type="file" (change)="onExcelUpload($event)" />
+</div>
+
+<div>
+  <label>Upload Word Template (.docx):</label>
+  <input type="file" (change)="onDocxUpload($event)" />
+</div>
+
+<router-outlet />
