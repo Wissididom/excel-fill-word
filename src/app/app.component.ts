@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import * as XLSX from 'xlsx';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
-import { saveAs } from 'file-saver';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
@@ -16,53 +15,51 @@ export class AppComponent {
   templateContent: any;
 
   onExcelUpload(event: any) {
-  	const target: DataTransfer = <DataTransfer>(event.target);
-  	const reader: FileReader = new FileReader();
-
-  	reader.onload = (e: any) => {
-  		const bstr: string = e.target.result;
-  		const wb: XLSX.WorkBook = XLSX.read(bstr, { type: 'binary' });
-  		const wsname: string = wb.SheetNames[0];
-  		const ws: XLSX.WorkSheet = wb.Sheets[wsname];
-  		this.excelData = XLSX.utils.sheet_to_json(ws);
-  	};
-  	reader.readAsBinaryString(target.files[0]);
+	const target: DataTransfer = <DataTransfer>(event.target);
+	const reader: FileReader = new FileReader();
+	reader.onload = (e: any) => {
+		const bstr: string = e.target.result;
+		const wb: XLSX.WorkBook = XLSX.read(bstr, { type: 'binary' });
+		const wsname: string = wb.SheetNames[0];
+		const ws: XLSX.WorkSheet = wb.Sheets[wsname];
+		this.excelData = XLSX.utils.sheet_to_json(ws);
+	};
+	reader.readAsBinaryString(target.files[0]);
   }
 
   onDocxUpload(event: any) {
-  	const file = event.target.files[0];
-  	const reader = new FileReader();
-  	reader.onload = (e: any) => {
-  		this.templateContent = e.target.result;
-  		if (this.excelData.length === 0) {
-  			console.warn('No Excel data available.');
-  			return;
-  		}
-  		if (this.excelData.length === 1) {
-  			const docBlob = this.generateDocx(this.excelData[0]);
-  			saveAs(docBlob, 'filled.docx');
-  		} else {
-  			const archive = new PizZip();
-  			this.excelData.forEach((row, index) => {
-  				const filename = `filled_${index + 1}.docx`;
-  				const docBlob = this.generateDocx(row);
-  				// Convert Blob to ArrayBuffer before adding to zip
-  				// (PizZip only supports strings, binary strings, Uint8Array, etc.)
-  				const reader = new FileReader();
-  				reader.onload = (e: any) => {
-  					const arrayBuffer = e.target.result;
-  					archive.file(filename, new Uint8Array(arrayBuffer));
-  					if (index === this.excelData.length - 1) {
-  						// Wait until last file is added before saving
-  						const zippedContent = archive.generate({ type: 'blob' });
-  						saveAs(zippedContent, 'filled_docs.zip');
-  					}
-  				};
-  				reader.readAsArrayBuffer(docBlob);
-  			});
-  		}
-  	}
-  	reader.readAsBinaryString(file);
+	const file = event.target.files[0];
+	const reader = new FileReader();
+	reader.onload = (e: any) => {
+		this.templateContent = e.target.result;
+		if (this.excelData.length === 0) {
+			console.warn('No Excel data available');
+			return;
+		}
+		if (this.excelData.length === 1) {
+			const docBlob = this.generateDocx(this.excelData[0]);
+			this.downloadFile(docBlob, 'filled.docx');
+		} else {
+			const archive = new PizZip();
+			this.excelData.forEach((row, index) => {
+				const filename = `filled_${index + 1}.docx`;
+				const docBlob = this.generateDocx(row);
+				// Convert Blob to ArrayBuffer before adding to zip
+				// (PizZip only supports strings, binary strings, Uint8Array, etc.)
+				const reader = new FileReader();
+				reader.onload = (e: any) => {
+					const arrayBuffer = e.target.result;
+					archive.file(filename, new Uint8Array(arrayBuffer));
+					if (index ===  this.excelData.length - 1) {
+						const zippedContent = archive.generate({ type: 'blob'});
+						this.downloadFile(zippedContent, 'filled_docs.zip');
+					}
+				};
+				reader.readAsArrayBuffer(docBlob);
+			});
+		}
+	}
+	reader.readAsBinaryString(file);
   }
   generateDocx(data: any): Blob {
   	const zip = new PizZip(this.templateContent);
@@ -81,5 +78,16 @@ export class AppComponent {
   		type: 'blob',
   		mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   	});
+  }
+
+  private downloadFile(blob: Blob, filename: string) {
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = filename;
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+	URL.revokeObjectURL(url);
   }
 }
