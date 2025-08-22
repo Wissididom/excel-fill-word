@@ -12,19 +12,19 @@ import { RouterOutlet } from '@angular/router';
 })
 export class AppComponent {
   excelData: any[] = [];
-  templateContent: any;
+  templateContent: ArrayBuffer | null = null;
 
   onExcelUpload(event: any) {
 	const target: DataTransfer = <DataTransfer>(event.target);
 	const reader: FileReader = new FileReader();
 	reader.onload = (e: any) => {
-		const bstr: string = e.target.result;
-		const wb: XLSX.WorkBook = XLSX.read(bstr, { type: 'binary' });
+		const arrayBuffer: ArrayBuffer = e.target.result;
+		const wb: XLSX.WorkBook = XLSX.read(arrayBuffer, { type: 'array' });
 		const wsname: string = wb.SheetNames[0];
 		const ws: XLSX.WorkSheet = wb.Sheets[wsname];
 		this.excelData = XLSX.utils.sheet_to_json(ws);
 	};
-	reader.readAsBinaryString(target.files[0]);
+	reader.readAsArrayBuffer(target.files[0]);
   }
 
   onDocxUpload(event: any) {
@@ -59,9 +59,12 @@ export class AppComponent {
 			});
 		}
 	}
-	reader.readAsBinaryString(file);
+	reader.readAsArrayBuffer(file);
   }
   generateDocx(data: any): Blob {
+	if (!this.templateContent) {
+		throw new Error('Template content not loaded');
+	}
   	const zip = new PizZip(this.templateContent);
   	const doc = new Docxtemplater(zip, {
   		paragraphLoop: true,
