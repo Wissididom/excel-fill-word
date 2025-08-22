@@ -30,7 +30,7 @@ export class AppComponent {
   onDocxUpload(event: any) {
 	const file = event.target.files[0];
 	const reader = new FileReader();
-	reader.onload = (e: any) => {
+	reader.onload = async (e: any) => {
 		this.templateContent = e.target.result;
 		if (this.excelData.length === 0) {
 			console.warn('No Excel data available');
@@ -41,22 +41,17 @@ export class AppComponent {
 			this.downloadFile(docBlob, 'filled.docx');
 		} else {
 			const archive = new PizZip();
-			this.excelData.forEach((row, index) => {
-				const filename = `filled_${index + 1}.docx`;
+			for (let i = 0; i < this.excelData.length; i++) {
+				const row = this.excelData[i];
+				const filename = `filled_${i + 1}.docx`;
 				const docBlob = this.generateDocx(row);
 				// Convert Blob to ArrayBuffer before adding to zip
 				// (PizZip only supports strings, binary strings, Uint8Array, etc.)
-				const reader = new FileReader();
-				reader.onload = (e: any) => {
-					const arrayBuffer = e.target.result;
-					archive.file(filename, new Uint8Array(arrayBuffer));
-					if (index ===  this.excelData.length - 1) {
-						const zippedContent = archive.generate({ type: 'blob'});
-						this.downloadFile(zippedContent, 'filled_docs.zip');
-					}
-				};
-				reader.readAsArrayBuffer(docBlob);
-			});
+				const arrayBuffer = await docBlob.arrayBuffer();
+				archive.file(filename, arrayBuffer);
+			}
+			const zippedContent = archive.generate({ type: 'blob' });
+			this.downloadFile(zippedContent, 'filled_docs.zip');
 		}
 	}
 	reader.readAsArrayBuffer(file);
