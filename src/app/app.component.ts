@@ -12,25 +12,25 @@ import { RouterOutlet } from '@angular/router';
 })
 export class AppComponent {
   excelData: any[] = [];
-  templateContent: any;
+  templateContent: ArrayBuffer | null = null;
 
   onExcelUpload(event: any) {
 	const target: DataTransfer = <DataTransfer>(event.target);
 	const reader: FileReader = new FileReader();
 	reader.onload = (e: any) => {
-		const bstr: string = e.target.result;
-		const wb: XLSX.WorkBook = XLSX.read(bstr, { type: 'binary' });
+		const arrayBuffer: ArrayBuffer = e.target.result;
+		const wb: XLSX.WorkBook = XLSX.read(arrayBuffer, { type: 'array' });
 		const wsname: string = wb.SheetNames[0];
 		const ws: XLSX.WorkSheet = wb.Sheets[wsname];
 		this.excelData = XLSX.utils.sheet_to_json(ws);
 	};
-	reader.readAsBinaryString(target.files[0]);
+	reader.readAsArrayBuffer(target.files[0]);
   }
 
   onDocxUpload(event: any) {
 	const file = event.target.files[0];
 	const reader = new FileReader();
-	reader.onload = (e: any) => {
+	reader.onload = async (e: any) => {
 		this.templateContent = e.target.result;
 		if (this.excelData.length === 0) {
 			console.warn('No Excel data available');
@@ -41,27 +41,25 @@ export class AppComponent {
 			this.downloadFile(docBlob, 'filled.docx');
 		} else {
 			const archive = new PizZip();
-			this.excelData.forEach((row, index) => {
-				const filename = `filled_${index + 1}.docx`;
+			for (let i = 0; i < this.excelData.length; i++) {
+				const row = this.excelData[i];
+				const filename = `filled_${i + 1}.docx`;
 				const docBlob = this.generateDocx(row);
 				// Convert Blob to ArrayBuffer before adding to zip
 				// (PizZip only supports strings, binary strings, Uint8Array, etc.)
-				const reader = new FileReader();
-				reader.onload = (e: any) => {
-					const arrayBuffer = e.target.result;
-					archive.file(filename, new Uint8Array(arrayBuffer));
-					if (index ===  this.excelData.length - 1) {
-						const zippedContent = archive.generate({ type: 'blob'});
-						this.downloadFile(zippedContent, 'filled_docs.zip');
-					}
-				};
-				reader.readAsArrayBuffer(docBlob);
-			});
+				const arrayBuffer = await docBlob.arrayBuffer();
+				archive.file(filename, arrayBuffer);
+			}
+			const zippedContent = archive.generate({ type: 'blob' });
+			this.downloadFile(zippedContent, 'filled_docs.zip');
 		}
 	}
-	reader.readAsBinaryString(file);
+	reader.readAsArrayBuffer(file);
   }
   generateDocx(data: any): Blob {
+	if (!this.templateContent) {
+		throw new Error('Template content not loaded');
+	}
   	const zip = new PizZip(this.templateContent);
   	const doc = new Docxtemplater(zip, {
   		paragraphLoop: true,
