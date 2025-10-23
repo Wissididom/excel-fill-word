@@ -18,7 +18,7 @@
     "@angular/platform-browser": "^20.3.7",
     "@angular/platform-browser-dynamic": "^20.3.7",
     "@angular/router": "^20.3.7",
-    "docxtemplater": "^3.66.7",
+    "docxtemplater": "^3.67.0",
     "pizzip": "^3.1.8",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
