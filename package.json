@@ -29,7 +29,6 @@
     "@angular/build": "^21.0.3",
     "@angular/cli": "^21.0.3",
     "@angular/compiler-cli": "^21.0.6",
-    "@types/file-saver": "^2.0.7",
     "@types/jasmine": "~5.1.13",
     "jasmine-core": "~5.13.0",
     "karma": "~6.4.0",
